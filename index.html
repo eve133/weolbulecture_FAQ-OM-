@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>강의장 운영 FAQ</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <style>
 :root{
   --navy:#1B2B4F; --navy-2:#2A3F6B; --navy-soft:#EEF2F8;
@@ -123,6 +124,28 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
 .editbar button{border:0;background:var(--navy);color:var(--bg);border-radius:8px;padding:7px 12px;font-weight:600;cursor:pointer}
 .editbar button:disabled{opacity:.4;cursor:default}
 
+/* 순서 변경 · 선택 삭제 */
+.bulk{display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:14px}
+.bulk.show{display:flex}
+.bulk label{display:flex;align-items:center;gap:8px;cursor:pointer}
+.bulk .right{display:flex;align-items:center;gap:8px}
+.bulk .cnt{color:var(--muted)}
+.bulk button{border:1px solid var(--red);background:var(--card);color:var(--red);border-radius:8px;padding:5px 12px;font-weight:600;cursor:pointer;font-size:13.5px}
+.bulk button:disabled{opacity:.35;cursor:default}
+.bulk .note{color:var(--muted);font-size:12.5px;width:100%}
+.item.editing{display:grid;grid-template-columns:auto 1fr}
+.item.editing .body{grid-column:1/-1}
+.item.sel{border-color:var(--red);box-shadow:0 0 0 1px var(--red) inset}
+.ctl{display:flex;align-items:center;gap:6px;padding:0 0 0 10px;align-self:stretch}
+.ctl input{width:17px;height:17px;margin:0;cursor:pointer;accent-color:#1B2B4F}
+.grip{display:flex;align-items:center;justify-content:center;width:26px;height:36px;border-radius:6px;color:var(--muted);cursor:grab;touch-action:none}
+.grip:hover{background:var(--navy-soft);color:var(--navy)}
+.grip:active{cursor:grabbing}
+.list.nodrag .grip{opacity:.25;cursor:default;pointer-events:none}
+.item.sortable-ghost{opacity:.35;border-style:dashed;border-color:var(--navy)}
+.item.sortable-chosen{box-shadow:0 10px 30px rgba(15,23,42,.18)}
+.item.sortable-drag{opacity:.95}
+
 /* 서식 */
 .red{color:var(--red);font-weight:600}
 .ans strong,.reply-t strong{color:var(--text);font-weight:700}
@@ -224,6 +247,11 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
 
 <main>
   <div class="wrap">
+    <div class="bulk" id="bulk">
+      <label><input type="checkbox" id="selAll"> 보이는 항목 전체 선택</label>
+      <div class="right"><span class="cnt" id="selCnt">0개 선택</span><button type="button" id="delSel" disabled>선택 삭제</button></div>
+      <span class="note" id="orderNote">≡ 아이콘을 끌어서 순서를 바꿀 수 있어요. 긴급 항목은 항상 맨 위에 있어요.</span>
+    </div>
     <div class="status" id="status" aria-live="polite">불러오는 중…</div>
     <div class="list" id="list"></div>
   </div>
@@ -299,7 +327,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
   const CATS = ["입장·출입","강의 중","장비·AV","시설·환경","수강 안내","긴급상황","기타"];
   const TYPE_LABEL = {field:"현장 대응", student:"수강생 답변"};
   const EDIT = new URLSearchParams(location.search).has("edit");
-  const state = {items:[], q:"", cat:"전체", type:"all", open:new Set(), canWrite:EDIT, editing:null, loaded:false, dirty:false, failed:false, draftImgs:{}};
+  const state = {items:[], q:"", cat:"전체", type:"all", open:new Set(), canWrite:EDIT, editing:null, loaded:false, dirty:false, failed:false, draftImgs:{}, sel:new Set()};
 
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -364,7 +392,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
       .filter(it => state.type === "all" || it.type === state.type)
       .map(it => ({it, s: score(it, ts)}))
       .filter(x => x.s > 0)
-      .sort((a,b) => ts.length ? (b.s - a.s) : ((b.it.urgent?1:0)-(a.it.urgent?1:0) || (b.it.updatedAt||0)-(a.it.updatedAt||0)))
+      .sort((a,b) => ts.length ? (b.s - a.s) : ((b.it.urgent?1:0)-(a.it.urgent?1:0) || (a.it.order||0)-(b.it.order||0)))
       .map(x => x.it);
   }
 
@@ -381,6 +409,23 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
   function fmt(ms){ if(!ms) return ""; const d = new Date(ms); return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")} 수정`; }
 
   function render(){
+    renderInner();
+    updateBulk();
+  }
+  function updateBulk(){
+    if(!state.canWrite) return;
+    const vis = filtered().map(x => x.id);
+    for(const id of [...state.sel]) if(!state.items.some(x => x.id === id)) state.sel.delete(id);
+    const n = state.sel.size, allOn = vis.length > 0 && vis.every(id => state.sel.has(id));
+    $("#selCnt").textContent = n + "개 선택";
+    $("#delSel").disabled = !n;
+    $("#selAll").checked = allOn;
+    $("#selAll").indeterminate = !allOn && vis.some(id => state.sel.has(id));
+    $("#orderNote").textContent = terms().length ? "검색 중에는 순서를 바꿀 수 없어요. 검색어를 지우면 다시 끌어서 옮길 수 있어요." : "≡ 아이콘을 끌어서 순서를 바꿀 수 있어요. 긴급 항목은 항상 맨 위에 있어요.";
+    $("#list").classList.toggle("nodrag", !!terms().length);
+    if(sortable) sortable.option("disabled", !!terms().length);
+  }
+  function renderInner(){
     renderCats();
     const ts = terms();
     const rows = filtered();
@@ -403,7 +448,12 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
     L.innerHTML = rows.map(it => {
       const open = state.open.has(it.id) || autoOpen;
       const kws = String(it.tags||"").split(",").map(s=>s.trim()).filter(Boolean);
-      return `<article class="item${it.urgent?" urgent":""}${open?" open":""}" data-id="${esc(it.id)}">
+      const ctl = state.canWrite ? `<div class="ctl">
+          <span class="grip" title="끌어서 순서 바꾸기" aria-label="끌어서 순서 바꾸기"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"/></svg></span>
+          <input type="checkbox" data-sel="${esc(it.id)}" ${state.sel.has(it.id)?"checked":""} aria-label="선택">
+        </div>` : "";
+      return `<article data-urgent="${it.urgent?1:0}" class="item${it.urgent?" urgent":""}${open?" open":""}${state.canWrite?" editing":""}${state.sel.has(it.id)?" sel":""}" data-id="${esc(it.id)}">
+        ${ctl}
         <button class="q" type="button" aria-expanded="${open}" data-act="toggle">
           <span class="meta">
             ${it.urgent?`<span class="tag urgent">긴급</span>`:""}
@@ -466,9 +516,56 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
     } else if(act === "del" && it){
       if(!confirm(`'${it.q}' 항목을 삭제할까요? 되돌릴 수 없어요.`)) return;
       state.items = state.items.filter(x => x.id !== id);
+      state.sel.delete(id);
       markDirty(); render(); toast("삭제했어요. 내려받기 후 반영돼요");
     }
   });
+
+  // 드래그로 순서 바꾸기
+  let sortable = null;
+  function initSortable(){
+    if(!state.canWrite || !window.Sortable || sortable) return;
+    sortable = Sortable.create($("#list"), {
+      handle: ".grip", draggable: ".item", animation: 160, forceFallback: true, fallbackTolerance: 3,
+      ghostClass: "sortable-ghost", chosenClass: "sortable-chosen", dragClass: "sortable-drag",
+      onMove: evt => evt.dragged.dataset.urgent === evt.related.dataset.urgent,
+      onEnd: () => {
+        const ids = [...$("#list").querySelectorAll(".item")].map(el => el.dataset.id);
+        const byId = Object.fromEntries(state.items.map(x => [x.id, x]));
+        const slots = ids.map(id => byId[id].order).sort((a,b) => a - b);
+        let changed = false;
+        ids.forEach((id, i) => { if(byId[id].order !== slots[i]){ byId[id].order = slots[i]; changed = true; } });
+        if(changed){ markDirty(); toast("순서를 바꿨어요. 내려받기 후 반영돼요"); }
+        render();
+      }
+    });
+    sortable.option("disabled", !!terms().length);
+  }
+
+  // 선택 삭제
+  $("#list").addEventListener("change", e => {
+    const c = e.target.closest("[data-sel]"); if(!c) return;
+    c.checked ? state.sel.add(c.dataset.sel) : state.sel.delete(c.dataset.sel);
+    c.closest(".item").classList.toggle("sel", c.checked);
+    updateBulk();
+  });
+  $("#selAll").addEventListener("change", e => {
+    const vis = filtered().map(x => x.id);
+    vis.forEach(id => e.target.checked ? state.sel.add(id) : state.sel.delete(id));
+    render();
+  });
+  $("#delSel").addEventListener("click", () => {
+    const n = state.sel.size; if(!n) return;
+    if(!confirm(`선택한 ${n}개 항목을 삭제할까요? 되돌릴 수 없어요.`)) return;
+    state.items = state.items.filter(x => !state.sel.has(x.id));
+    state.sel.clear();
+    markDirty(); render(); toast(`${n}개를 삭제했어요. 내려받기 후 반영돼요`);
+  });
+  function normalizeOrder(){
+    const sorted = state.items.slice().sort((a,b) =>
+      ((b.urgent?1:0) - (a.urgent?1:0)) || ((typeof a.order === "number" && typeof b.order === "number") ? a.order - b.order : (b.updatedAt||0) - (a.updatedAt||0)));
+    sorted.forEach((x, i) => x.order = i + 1);
+  }
 
   function copyText(t){
     const done = () => toast("답변 문구를 복사했어요");
@@ -492,7 +589,8 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
     $("#editMsg").textContent = "저장하지 않은 변경 사항이 있어요. faqs.json을 내려받아 GitHub에 올려주세요.";
   }
   $("#dlBtn").addEventListener("click", () => {
-    const out = state.items.slice().sort((a,b) => String(a.id).localeCompare(String(b.id)));
+    normalizeOrder();
+    const out = state.items.slice().sort((a,b) => a.order - b.order);
     const blob = new Blob([JSON.stringify(out, null, 2)], {type:"application/json"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob); a.download = "faqs.json";
@@ -540,11 +638,12 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
     if(!data.a){ $("#fErr").textContent = "대응 방법이나 답변을 입력하세요."; $("#fA").focus(); return; }
     if(state.editing){
       const i = state.items.findIndex(x => x.id === state.editing);
-      if(i > -1) state.items[i] = {id: state.editing, ...data};
+      if(i > -1) state.items[i] = {id: state.editing, ...data, order: state.items[i].order};
       toast("수정했어요. 내려받기 후 반영돼요");
     } else {
       const id = "faq-" + Date.now().toString(36);
-      state.items.push({id, ...data});
+      const minOrder = state.items.reduce((m, x) => Math.min(m, x.order||0), 1);
+      state.items.push({id, ...data, order: minOrder - 1});
       state.open.add(id);
       toast("추가했어요. 내려받기 후 반영돼요");
     }
@@ -667,11 +766,11 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
   $("#lightbox").addEventListener("click", e => { if(!e.target.closest("figure")) $("#lightbox").classList.remove("show"); });
 
   // ---------- 데이터 불러오기 ----------
-  if(EDIT){ $("#editbar").classList.add("show"); $("#addBtn").classList.add("show"); }
+  if(EDIT){ $("#editbar").classList.add("show"); $("#addBtn").classList.add("show"); $("#bulk").classList.add("show"); initSortable(); }
   render();
   fetch("faqs.json?v=" + Date.now(), {cache:"no-store"})
     .then(r => { if(!r.ok) throw new Error(r.status); return r.json(); })
-    .then(list => { state.items = Array.isArray(list) ? list.filter(x => x && x.id && x.q) : []; })
+    .then(list => { state.items = Array.isArray(list) ? list.filter(x => x && x.id && x.q) : []; normalizeOrder(); })
     .catch(() => { state.failed = true; })
     .finally(() => { state.loaded = true; render(); });
 })();
