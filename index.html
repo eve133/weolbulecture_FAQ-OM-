@@ -55,7 +55,7 @@ button,input,textarea,select{font:inherit;color:inherit}
 .hint{margin:10px 2px 0;font-size:13px;color:var(--on-navy-muted)}
 kbd{font-family:inherit;border:1px solid var(--on-navy-muted);border-radius:4px;padding:0 5px;font-size:12px}
 
-/* 검색창: 헤더에 걸쳐 놓인 흰 박스 */
+/* 검색창 */
 .search{
   margin-top:24px;display:flex;align-items:center;gap:10px;
   background:#fff;color:#1B2B4F;border:1px solid transparent;border-radius:12px;padding:4px 6px 4px 16px;
@@ -122,6 +122,22 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
 .editbar .wrap{padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:14px;font-weight:600}
 .editbar button{border:0;background:var(--navy);color:var(--bg);border-radius:8px;padding:7px 12px;font-weight:600;cursor:pointer}
 .editbar button:disabled{opacity:.4;cursor:default}
+
+/* 서식 */
+.red{color:var(--red);font-weight:600}
+.ans strong,.reply-t strong{color:var(--text);font-weight:700}
+.ans a,.reply-t a{color:var(--navy);text-decoration:underline;text-underline-offset:2px}
+.tb{display:flex;gap:4px}
+.tb button{min-width:34px;height:30px;border:1px solid var(--line);background:var(--card);border-radius:6px;cursor:pointer;font-size:13px;padding:0 8px}
+.tb button:hover{border-color:var(--navy)}
+.hlt{background:linear-gradient(transparent 45%,#FFE066 45%);padding:0 1px}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .hlt{background:linear-gradient(transparent 45%,#7A6400 45%)}}
+:root[data-theme="dark"] .hlt{background:linear-gradient(transparent 45%,#7A6400 45%)}
+.pv{display:none;border:1px dashed var(--line);border-radius:8px;padding:10px 12px;white-space:pre-line;line-height:1.7;font-size:14.5px;background:var(--bg-2)}
+.pv.show{display:block}
+.pv::before{content:"미리보기";display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px}
+.pv strong{color:var(--text)}
+.pv a{color:var(--navy);text-decoration:underline}
 
 /* 모달 */
 .scrim{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;z-index:20;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));overflow:auto}
@@ -212,12 +228,30 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
       </div>
     </div>
     <div class="f">
-      <label for="fA">대응 방법 / 답변 <small>줄바꿈이 그대로 보여요</small></label>
+      <label for="fA">대응 방법 / 답변 <small>글자를 선택하고 아래 버튼을 누르면 서식이 적용돼요</small></label>
+      <div class="tb" data-for="fA" role="toolbar" aria-label="서식">
+        <button type="button" data-w="**" title="굵게"><b>B</b></button>
+        <button type="button" data-w="*" title="기울임"><i>I</i></button>
+        <button type="button" data-w="__" title="밑줄"><u>U</u></button>
+        <button type="button" data-w="==" title="빨간 글씨"><span class="red">A</span></button>
+        <button type="button" data-w="^^" title="형광펜"><span class="hlt">형광펜</span></button>
+        <button type="button" data-w="link" title="링크">링크</button>
+      </div>
       <textarea id="fA" placeholder="1. 먼저 …&#10;2. 그래도 안 되면 …"></textarea>
+      <div class="pv" id="fApv" aria-live="polite"></div>
     </div>
     <div class="f">
-      <label for="fR">수강생에게 보낼 답변 문구 <small>선택 · 복사 버튼이 붙어요</small></label>
+      <label for="fR">수강생에게 보낼 답변 문구 <small>선택 · 복사할 때는 서식 없이 글자만 복사돼요</small></label>
+      <div class="tb" data-for="fR" role="toolbar" aria-label="서식">
+        <button type="button" data-w="**" title="굵게"><b>B</b></button>
+        <button type="button" data-w="*" title="기울임"><i>I</i></button>
+        <button type="button" data-w="__" title="밑줄"><u>U</u></button>
+        <button type="button" data-w="==" title="빨간 글씨"><span class="red">A</span></button>
+        <button type="button" data-w="^^" title="형광펜"><span class="hlt">형광펜</span></button>
+        <button type="button" data-w="link" title="링크">링크</button>
+      </div>
       <textarea id="fR" style="min-height:80px" placeholder="안녕하세요, 월부 강의장 운영팀입니다. …"></textarea>
+      <div class="pv" id="fRpv" aria-live="polite"></div>
     </div>
     <div class="f">
       <label for="fK">검색 키워드 <small>쉼표로 구분 · 비슷한 말을 넣어두면 잘 찾혀요</small></label>
@@ -266,12 +300,29 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
     return s;
   }
 
-  function hl(text, ts){
+  // 서식: **굵게** *기울임* __밑줄__ ==빨간 글씨== ^^형광펜^^ [링크](https://...)
+  function fmtRich(s){
+    return s
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/__(.+?)__/g, "<u>$1</u>")
+      .replace(/==(.+?)==/g, '<span class="red">$1</span>')
+      .replace(/\^\^(.+?)\^\^/g, '<span class="hlt">$1</span>')
+      .replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g, "$1<em>$2</em>")
+      .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  }
+  function plainText(s){
+    return String(s||"")
+      .replace(/\*\*(.+?)\*\*/g, "$1").replace(/__(.+?)__/g, "$1").replace(/==(.+?)==/g, "$1").replace(/\^\^(.+?)\^\^/g, "$1")
+      .replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g, "$1$2")
+      .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1 ($2)");
+  }
+  function hl(text, ts, rich){
     let out = esc(text);
+    if(rich) out = fmtRich(out);
     const plain = ts.filter(t => !isCho(t)).map(esc).sort((a,b)=>b.length-a.length);
     if(!plain.length) return out;
     const re = new RegExp("(" + plain.map(t => t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|") + ")","gi");
-    return out.replace(re, "<mark>$1</mark>");
+    return out.split(/(<[^>]+>)/).map(part => part.startsWith("<") ? part : part.replace(re, "<mark>$1</mark>")).join("");
   }
 
   function filtered(){
@@ -302,7 +353,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
     const ts = terms();
     const rows = filtered();
     const st = $("#status");
-    if(!state.loaded){ /* keep loading text */ }
+    if(!state.loaded){ }
     else if(state.failed){ st.textContent = "FAQ 내용을 불러오지 못했어요. 잠시 후 새로고침해 주세요."; }
     else if(ts.length){ st.textContent = `'${state.q.trim()}' 검색 결과 ${rows.length}건`; }
     else { st.textContent = `총 ${rows.length}건`; }
@@ -331,8 +382,8 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
           <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
         </button>
         <div class="body">
-          <div class="ans">${hl(it.a, ts)}</div>
-          ${it.reply?`<div class="reply"><div class="reply-h"><span>수강생 답변 문구</span><button class="copy" type="button" data-act="copy">복사</button></div><div class="reply-t">${hl(it.reply, ts)}</div></div>`:""}
+          <div class="ans">${hl(it.a, ts, true)}</div>
+          ${it.reply?`<div class="reply"><div class="reply-h"><span>수강생 답변 문구</span><button class="copy" type="button" data-act="copy">복사</button></div><div class="reply-t">${hl(it.reply, ts, true)}</div></div>`:""}
           <div class="foot">
             <div class="kw">${kws.map(k=>`<span>${hl(k, ts)}</span>`).join("")}</div>
             <div class="acts">
@@ -376,7 +427,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
       art.classList.toggle("open", open); b.setAttribute("aria-expanded", open);
       open ? state.open.add(id) : state.open.delete(id);
     } else if(act === "copy" && it){
-      copyText(it.reply);
+      copyText(plainText(it.reply));
     } else if(act === "edit" && it){
       openSheet(it);
     } else if(act === "del" && it){
@@ -434,6 +485,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
     $("#fU").checked = it ? !!it.urgent : false;
     $("#fErr").textContent = "";
     $("#scrim").classList.add("show");
+    updatePv("fA"); updatePv("fR");
     setTimeout(()=>$("#fQ").focus(), 30);
   }
   function closeSheet(){ $("#scrim").classList.remove("show"); state.editing=null; $("#addBtn").focus(); }
@@ -460,6 +512,34 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
     }
     markDirty(); closeSheet(); render();
   });
+
+  // 서식 버튼
+  document.querySelectorAll(".tb").forEach(tb => tb.addEventListener("click", e => {
+    const b = e.target.closest("button"); if(!b) return;
+    const ta = document.getElementById(tb.dataset.for);
+    const s = ta.selectionStart, en = ta.selectionEnd, v = ta.value, sel = v.slice(s, en);
+    let ins, cs, ce;
+    if(b.dataset.w === "link"){
+      const url = prompt("연결할 주소를 입력하세요 (https://로 시작)", "https://");
+      if(!url || !/^https?:\/\//.test(url)) return;
+      const label = sel || "링크";
+      ins = "[" + label + "](" + url + ")"; cs = s + ins.length; ce = cs;
+    } else {
+      const w = b.dataset.w, t = sel || "텍스트";
+      ins = w + t + w; cs = s + w.length; ce = cs + t.length;
+    }
+    ta.value = v.slice(0, s) + ins + v.slice(en);
+    ta.focus(); ta.setSelectionRange(cs, ce);
+    updatePv(ta.id);
+  }));
+
+  // 편집 창 미리보기
+  function updatePv(id){
+    const v = document.getElementById(id).value, pv = document.getElementById(id + "pv");
+    pv.innerHTML = v.trim() ? fmtRich(esc(v)) : "";
+    pv.classList.toggle("show", !!v.trim());
+  }
+  ["fA","fR"].forEach(id => document.getElementById(id).addEventListener("input", () => updatePv(id)));
 
   // ---------- 데이터 불러오기 ----------
   if(EDIT){ $("#editbar").classList.add("show"); $("#addBtn").classList.add("show"); }
