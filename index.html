@@ -127,7 +127,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
 .red{color:var(--red);font-weight:600}
 .ans strong,.reply-t strong{color:var(--text);font-weight:700}
 .ans a,.reply-t a{color:var(--navy);text-decoration:underline;text-underline-offset:2px}
-.tb{display:flex;gap:4px}
+.tb{display:flex;gap:4px;flex-wrap:wrap}
 .tb button{min-width:34px;height:30px;border:1px solid var(--line);background:var(--card);border-radius:6px;cursor:pointer;font-size:13px;padding:0 8px}
 .tb button:hover{border-color:var(--navy)}
 .hlt{background:linear-gradient(transparent 45%,#FFE066 45%);padding:0 1px}
@@ -138,6 +138,28 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
 .pv::before{content:"미리보기";display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px}
 .pv strong{color:var(--text)}
 .pv a{color:var(--navy);text-decoration:underline}
+
+/* 사진 */
+.ph{display:block;max-width:100%;max-height:420px;width:auto;border-radius:8px;border:1px solid var(--line);margin:8px 0;cursor:zoom-in;background:var(--bg-2)}
+.pv .ph{max-height:220px}
+.thumbs{display:none;flex-wrap:wrap;gap:8px}
+.thumbs.show{display:flex}
+.thumb{position:relative;width:84px}
+.thumb img{width:84px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--line);display:block}
+.thumb span{display:block;font-size:12px;color:var(--muted);text-align:center;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.thumb button{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:0;background:var(--red);color:#fff;font-size:13px;line-height:22px;padding:0;cursor:pointer}
+.phlink{color:var(--navy);font-weight:600;text-decoration:underline dotted;text-underline-offset:3px;cursor:pointer;border-radius:4px}
+.phlink::after{content:"";display:inline-block;width:14px;height:14px;margin-left:3px;vertical-align:-2px;background:currentColor;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Ccircle cx='9' cy='10' r='1.6'/%3E%3Cpath d='m21 16-5-5-9 8'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Ccircle cx='9' cy='10' r='1.6'/%3E%3Cpath d='m21 16-5-5-9 8'/%3E%3C/svg%3E") center/contain no-repeat}
+.phlink:hover{background:var(--navy-soft)}
+.lightbox{position:fixed;inset:0;background:rgba(8,12,22,.82);display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:40;padding:24px;padding-top:calc(24px + env(safe-area-inset-top,0px));padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+.lightbox.show{display:flex}
+.lightbox figure{margin:0;background:#fff;border-radius:12px;padding:10px;max-width:min(920px,100%);max-height:calc(100% - 40px);display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.4);animation:pop .16s ease-out}
+.lightbox img{max-width:100%;max-height:calc(100vh - 160px);object-fit:contain;border-radius:6px;display:block}
+.lightbox figcaption{font-size:14px;font-weight:600;color:#1B2B4F;padding:8px 4px 2px}
+.lightbox p{margin:0;color:#C9D2E1;font-size:13px}
+@keyframes pop{from{transform:scale(.96);opacity:0}to{transform:none;opacity:1}}
 
 /* 모달 */
 .scrim{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;z-index:20;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));overflow:auto}
@@ -159,7 +181,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
 .err{color:var(--red);font-size:14px;margin:0 0 10px}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#1B2B4F;color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:30}
 .toast.show{opacity:1}
-@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
@@ -228,7 +250,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
       </div>
     </div>
     <div class="f">
-      <label for="fA">대응 방법 / 답변 <small>글자를 선택하고 아래 버튼을 누르면 서식이 적용돼요</small></label>
+      <label for="fA">대응 방법 / 답변 <small>글자를 선택하고 버튼을 누르면 서식이 적용돼요 · 사진은 단어를 선택한 뒤 📷 버튼이나 Cmd+V로 넣어요</small></label>
       <div class="tb" data-for="fA" role="toolbar" aria-label="서식">
         <button type="button" data-w="**" title="굵게"><b>B</b></button>
         <button type="button" data-w="*" title="기울임"><i>I</i></button>
@@ -236,8 +258,11 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
         <button type="button" data-w="==" title="빨간 글씨"><span class="red">A</span></button>
         <button type="button" data-w="^^" title="형광펜"><span class="hlt">형광펜</span></button>
         <button type="button" data-w="link" title="링크">링크</button>
+        <button type="button" data-w="img" title="사진 넣기">📷 사진</button>
       </div>
+      <input type="file" id="fImg" accept="image/*" multiple hidden>
       <textarea id="fA" placeholder="1. 먼저 …&#10;2. 그래도 안 되면 …"></textarea>
+      <div class="thumbs" id="thumbs"></div>
       <div class="pv" id="fApv" aria-live="polite"></div>
     </div>
     <div class="f">
@@ -267,13 +292,14 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
 </div>
 
 <div class="toast" id="toast" role="status"></div>
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="사진 보기"><figure><img alt=""><figcaption></figcaption></figure><p>바깥을 누르면 닫혀요</p></div>
 
 <script>
 (function(){
   const CATS = ["입장·출입","강의 중","장비·AV","시설·환경","수강 안내","긴급상황","기타"];
   const TYPE_LABEL = {field:"현장 대응", student:"수강생 답변"};
   const EDIT = new URLSearchParams(location.search).has("edit");
-  const state = {items:[], q:"", cat:"전체", type:"all", open:new Set(), canWrite:EDIT, editing:null, loaded:false, dirty:false, failed:false};
+  const state = {items:[], q:"", cat:"전체", type:"all", open:new Set(), canWrite:EDIT, editing:null, loaded:false, dirty:false, failed:false, draftImgs:{}};
 
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -283,7 +309,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
   const cho = s => Array.from(s).map(c => { const k = c.charCodeAt(0) - 0xAC00; return (k >= 0 && k < 11172) ? CHO[Math.floor(k/588)] : c; }).join("");
   const isCho = t => /^[ㄱ-ㅎ]+$/.test(t);
 
-  function hay(it){ return [it.q, it.a, it.reply, it.tags, it.cat].join(" ").toLowerCase(); }
+  function hay(it){ return [it.q, it.a, it.reply, it.tags, it.cat].join(" ").replace(/\{\{사진\d+\|([^}\n]+)\}\}/g, " $1 ").replace(/\{\{사진\d+\}\}/g, " ").toLowerCase(); }
   function terms(){ return state.q.trim().toLowerCase().split(/\s+/).filter(Boolean); }
 
   function score(it, ts){
@@ -300,25 +326,31 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
     return s;
   }
 
-  // 서식: **굵게** *기울임* __밑줄__ ==빨간 글씨== ^^형광펜^^ [링크](https://...)
-  function fmtRich(s){
-    return s
+  // 서식: **굵게** *기울임* __밑줄__ ==빨간 글씨== ^^형광펜^^ [링크](https://...) {{사진1|단어}}
+  function fmtRich(s, imgs){
+    return addImgs(s
       .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
       .replace(/__(.+?)__/g, "<u>$1</u>")
       .replace(/==(.+?)==/g, '<span class="red">$1</span>')
       .replace(/\^\^(.+?)\^\^/g, '<span class="hlt">$1</span>')
       .replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g, "$1<em>$2</em>")
-      .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+      .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>'), imgs);
+  }
+  function addImgs(s, imgs){
+    imgs = imgs || {};
+    return s
+      .replace(/\{\{사진(\d+)\|([^}\n]+)\}\}/g, (m, n, label) => imgs[n] ? `<span class="phlink" role="button" tabindex="0" data-src="${imgs[n]}">${label}</span>` : label)
+      .replace(/\{\{사진(\d+)\}\}\n?/g, (m, n) => imgs[n] ? `<img class="ph" src="${imgs[n]}" alt="사진 ${n}" loading="lazy">` : "");
   }
   function plainText(s){
-    return String(s||"")
+    return String(s||"").replace(/\{\{사진\d+\|([^}\n]+)\}\}/g, "$1").replace(/\{\{사진\d+\}\}\n?/g, "")
       .replace(/\*\*(.+?)\*\*/g, "$1").replace(/__(.+?)__/g, "$1").replace(/==(.+?)==/g, "$1").replace(/\^\^(.+?)\^\^/g, "$1")
       .replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g, "$1$2")
       .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1 ($2)");
   }
-  function hl(text, ts, rich){
+  function hl(text, ts, rich, imgs){
     let out = esc(text);
-    if(rich) out = fmtRich(out);
+    if(rich) out = fmtRich(out, imgs);
     const plain = ts.filter(t => !isCho(t)).map(esc).sort((a,b)=>b.length-a.length);
     if(!plain.length) return out;
     const re = new RegExp("(" + plain.map(t => t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|") + ")","gi");
@@ -382,8 +414,8 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
           <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
         </button>
         <div class="body">
-          <div class="ans">${hl(it.a, ts, true)}</div>
-          ${it.reply?`<div class="reply"><div class="reply-h"><span>수강생 답변 문구</span><button class="copy" type="button" data-act="copy">복사</button></div><div class="reply-t">${hl(it.reply, ts, true)}</div></div>`:""}
+          <div class="ans">${hl(it.a, ts, true, it.imgs)}</div>
+          ${it.reply?`<div class="reply"><div class="reply-h"><span>수강생 답변 문구</span><button class="copy" type="button" data-act="copy">복사</button></div><div class="reply-t">${hl(it.reply, ts, true, it.imgs)}</div></div>`:""}
           <div class="foot">
             <div class="kw">${kws.map(k=>`<span>${hl(k, ts)}</span>`).join("")}</div>
             <div class="acts">
@@ -405,6 +437,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
   $("#clear").addEventListener("click", () => { $("#q").value=""; state.q=""; $("#clear").classList.remove("show"); render(); $("#q").focus(); });
   document.addEventListener("keydown", e => {
     if(e.key === "/" && !["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName)){ e.preventDefault(); $("#q").focus(); }
+    if(e.key === "Escape" && $("#lightbox").classList.contains("show")){ $("#lightbox").classList.remove("show"); return; }
     if(e.key === "Escape" && $("#scrim").classList.contains("show")) closeSheet();
   });
   $("#cats").addEventListener("click", e => { const b = e.target.closest(".chip"); if(!b) return; state.cat = b.dataset.c; render(); });
@@ -483,6 +516,8 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
     $("#fR").value = it ? (it.reply||"") : "";
     $("#fK").value = it ? (it.tags||"") : "";
     $("#fU").checked = it ? !!it.urgent : false;
+    state.draftImgs = it && it.imgs ? {...it.imgs} : {};
+    renderThumbs();
     $("#fErr").textContent = "";
     $("#scrim").classList.add("show");
     updatePv("fA"); updatePv("fR");
@@ -498,6 +533,9 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
       a: $("#fA").value.trim(), reply: $("#fR").value.trim(), tags: $("#fK").value.trim(),
       urgent: $("#fU").checked, updatedAt: Date.now()
     };
+    const used = {};
+    (data.a + " " + data.reply).replace(/\{\{사진(\d+)/g, (m, n) => { if(state.draftImgs[n]) used[n] = state.draftImgs[n]; return m; });
+    if(Object.keys(used).length) data.imgs = used;
     if(!data.q){ $("#fErr").textContent = "질문 또는 상황을 입력하세요."; $("#fQ").focus(); return; }
     if(!data.a){ $("#fErr").textContent = "대응 방법이나 답변을 입력하세요."; $("#fA").focus(); return; }
     if(state.editing){
@@ -519,6 +557,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
     const ta = document.getElementById(tb.dataset.for);
     const s = ta.selectionStart, en = ta.selectionEnd, v = ta.value, sel = v.slice(s, en);
     let ins, cs, ce;
+    if(b.dataset.w === "img"){ $("#fImg").click(); return; }
     if(b.dataset.w === "link"){
       const url = prompt("연결할 주소를 입력하세요 (https://로 시작)", "https://");
       if(!url || !/^https?:\/\//.test(url)) return;
@@ -536,10 +575,96 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
   // 편집 창 미리보기
   function updatePv(id){
     const v = document.getElementById(id).value, pv = document.getElementById(id + "pv");
-    pv.innerHTML = v.trim() ? fmtRich(esc(v)) : "";
+    pv.innerHTML = v.trim() ? fmtRich(esc(v), state.draftImgs) : "";
     pv.classList.toggle("show", !!v.trim());
   }
   ["fA","fR"].forEach(id => document.getElementById(id).addEventListener("input", () => updatePv(id)));
+
+  // ---------- 사진 ----------
+  function compress(file){
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file), img = new Image();
+      img.onload = () => {
+        const max = 1280, r = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
+        const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height);
+        x.drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL("image/jpeg", 0.82));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(); };
+      img.src = url;
+    });
+  }
+  async function addImages(files){
+    const ta = $("#fA");
+    const s0 = ta.selectionStart, e0 = ta.selectionEnd;
+    let label = ta.value.slice(s0, e0).replace(/\n/g, " ").trim();
+    if(!label){
+      label = (prompt("누르면 사진이 뜨게 할 단어를 입력하세요\n(팁: 설명 속 단어를 먼저 드래그로 선택하면 그 단어에 바로 연결돼요)", "사진 보기") || "").trim();
+      if(!label) return;
+    }
+    label = label.replace(/[{}|]/g, "");
+    let pos = s0, end = e0, n = 0;
+    for(const f of files){
+      if(!f.type.startsWith("image/")) continue;
+      try{
+        const data = await compress(f);
+        const ids = Object.keys(state.draftImgs).map(Number);
+        const id = String((ids.length ? Math.max(...ids) : 0) + 1);
+        state.draftImgs[id] = data;
+        const lbl = n ? label + " " + (n + 1) : label;
+        const tok = (n ? " " : "") + "{{사진" + id + "|" + lbl + "}}";
+        ta.value = ta.value.slice(0, pos) + tok + ta.value.slice(end);
+        pos = pos + tok.length; end = pos; n++;
+      }catch(_){ toast("사진을 불러오지 못했어요. 다른 파일로 시도해 주세요."); }
+    }
+    ta.focus(); ta.setSelectionRange(pos, pos); renderThumbs(); updatePv("fA");
+  }
+  function thumbLabel(id){
+    const m = ($("#fA").value + " " + $("#fR").value).match(new RegExp("\\{\\{사진" + id + "\\|([^}\\n]+)\\}\\}"));
+    return m ? m[1] : "사진" + id;
+  }
+  function renderThumbs(){
+    const box = $("#thumbs"), ids = Object.keys(state.draftImgs);
+    box.classList.toggle("show", ids.length > 0);
+    box.innerHTML = ids.map(id => `<div class="thumb"><img src="${state.draftImgs[id]}" alt=""><button type="button" data-del="${id}" aria-label="사진${id} 삭제">×</button><span>${esc(thumbLabel(id))}</span></div>`).join("");
+  }
+  $("#thumbs").addEventListener("click", e => {
+    const b = e.target.closest("[data-del]"); if(!b) return;
+    const id = b.dataset.del;
+    delete state.draftImgs[id];
+    const reL = new RegExp("\\{\\{사진" + id + "\\|([^}\\n]+)\\}\\}", "g");
+    const re = new RegExp("\\{\\{사진" + id + "\\}\\}\\n?", "g");
+    ["#fA","#fR"].forEach(sel => { $(sel).value = $(sel).value.replace(reL, "$1").replace(re, ""); });
+    renderThumbs(); updatePv("fA"); updatePv("fR");
+  });
+  $("#fImg").addEventListener("change", e => { addImages([...e.target.files]); e.target.value = ""; });
+  $("#fA").addEventListener("paste", e => {
+    const files = [...(e.clipboardData && e.clipboardData.files || [])].filter(f => f.type.startsWith("image/"));
+    if(files.length){ e.preventDefault(); addImages(files); }
+  });
+
+  // 사진 팝업
+  function openPhoto(src, cap){
+    const lb = $("#lightbox");
+    lb.querySelector("img").src = src;
+    lb.querySelector("figcaption").textContent = cap || "";
+    lb.querySelector("figcaption").style.display = cap ? "" : "none";
+    lb.classList.add("show");
+  }
+  document.addEventListener("click", e => {
+    const k = e.target.closest(".phlink");
+    if(k){ e.preventDefault(); openPhoto(k.dataset.src, k.textContent); return; }
+    const im = e.target.closest("img.ph");
+    if(im && !im.closest("#lightbox")) openPhoto(im.src, "");
+  });
+  document.addEventListener("keydown", e => {
+    const k = e.target.closest && e.target.closest(".phlink");
+    if(k && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); openPhoto(k.dataset.src, k.textContent); }
+  });
+  $("#lightbox").addEventListener("click", e => { if(!e.target.closest("figure")) $("#lightbox").classList.remove("show"); });
 
   // ---------- 데이터 불러오기 ----------
   if(EDIT){ $("#editbar").classList.add("show"); $("#addBtn").classList.add("show"); }
