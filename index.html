@@ -146,6 +146,18 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
 .item.sortable-chosen{box-shadow:0 10px 30px rgba(15,23,42,.18)}
 .item.sortable-drag{opacity:.95}
 
+/* 담당자 */
+.who{margin-top:16px;border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:10px;padding:12px 14px;background:var(--bg-2)}
+.who strong{display:block;color:var(--text);font-size:14.5px;margin-bottom:6px}
+.who-line{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:14.5px}
+.who-name{display:inline-block;background:var(--navy);color:var(--bg);border-radius:999px;padding:2px 11px;font-weight:600;font-size:13.5px}
+.who-sep{color:var(--muted)}
+.toggles{display:flex;flex-wrap:wrap;gap:8px}
+.toggle{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 16px;cursor:pointer;font-weight:600;font-size:14px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.toggle::before{content:"";width:14px;height:14px;border-radius:50%;border:1.5px solid currentColor;box-sizing:border-box}
+.toggle[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:var(--bg)}
+.toggle[aria-pressed="true"]::before{background:currentColor;box-shadow:inset 0 0 0 2px var(--navy)}
+
 /* 서식 */
 .red{color:var(--red);font-weight:600}
 .ans strong,.reply-t strong{color:var(--text);font-weight:700}
@@ -307,6 +319,10 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
       <div class="pv" id="fRpv" aria-live="polite"></div>
     </div>
     <div class="f">
+      <label>그래도 안 된다면? 연락할 담당자 <small>선택 · 여러 명 고를 수 있어요</small></label>
+      <div class="toggles" id="fWho" role="group" aria-label="담당자"></div>
+    </div>
+    <div class="f">
       <label for="fK">검색 키워드 <small>쉼표로 구분 · 비슷한 말을 넣어두면 잘 찾혀요</small></label>
       <input id="fK" placeholder="예: 마이크, 음향, 소리, 핀마이크">
     </div>
@@ -326,6 +342,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
 (function(){
   const CATS = ["입장·출입","강의 중","장비·AV","시설·환경","수강 안내","긴급상황","기타"];
   const TYPE_LABEL = {field:"현장 대응", student:"수강생 답변"};
+  const CONTACTS = ["이브","테디","토니"]; // 담당자 이름을 바꾸거나 추가하려면 여기를 고치세요
   const EDIT = new URLSearchParams(location.search).has("edit");
   const state = {items:[], q:"", cat:"전체", type:"all", open:new Set(), canWrite:EDIT, editing:null, loaded:false, dirty:false, failed:false, draftImgs:{}, sel:new Set()};
 
@@ -337,7 +354,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
   const cho = s => Array.from(s).map(c => { const k = c.charCodeAt(0) - 0xAC00; return (k >= 0 && k < 11172) ? CHO[Math.floor(k/588)] : c; }).join("");
   const isCho = t => /^[ㄱ-ㅎ]+$/.test(t);
 
-  function hay(it){ return [it.q, it.a, it.reply, it.tags, it.cat].join(" ").replace(/\{\{사진\d+\|([^}\n]+)\}\}/g, " $1 ").replace(/\{\{사진\d+\}\}/g, " ").toLowerCase(); }
+  function hay(it){ return [it.q, it.a, it.reply, it.tags, it.cat, (it.contacts||[]).join(" ")].join(" ").replace(/\{\{사진\d+\|([^}\n]+)\}\}/g, " $1 ").replace(/\{\{사진\d+\}\}/g, " ").toLowerCase(); }
   function terms(){ return state.q.trim().toLowerCase().split(/\s+/).filter(Boolean); }
 
   function score(it, ts){
@@ -465,6 +482,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
         </button>
         <div class="body">
           <div class="ans">${hl(it.a, ts, true, it.imgs)}</div>
+          ${(it.contacts||[]).length?`<div class="who"><strong>그래도 안 된다면?</strong><div class="who-line">${it.contacts.map(n=>`<span class="who-name">${hl(n, ts)}</span>`).join('<span class="who-sep">/</span>')}<span>에게 빠르게 연락 주세요!</span></div></div>`:""}
           ${it.reply?`<div class="reply"><div class="reply-h"><span>수강생 답변 문구</span><button class="copy" type="button" data-act="copy">복사</button></div><div class="reply-t">${hl(it.reply, ts, true, it.imgs)}</div></div>`:""}
           <div class="foot">
             <div class="kw">${kws.map(k=>`<span>${hl(k, ts)}</span>`).join("")}</div>
@@ -604,6 +622,11 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
 
   // ---------- 모달 ----------
   $("#fCat").innerHTML = CATS.map(c=>`<option>${esc(c)}</option>`).join("");
+  $("#fWho").innerHTML = CONTACTS.map(n=>`<button type="button" class="toggle" data-who="${esc(n)}" aria-pressed="false">${esc(n)}</button>`).join("");
+  $("#fWho").addEventListener("click", e => {
+    const b = e.target.closest("[data-who]"); if(!b) return;
+    b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true");
+  });
   function openSheet(it, prefillQ){
     state.editing = it ? it.id : null;
     $("#sheetTitle").textContent = it ? "항목 수정" : "새 항목 추가";
@@ -614,6 +637,8 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
     $("#fR").value = it ? (it.reply||"") : "";
     $("#fK").value = it ? (it.tags||"") : "";
     $("#fU").checked = it ? !!it.urgent : false;
+    const who = it && it.contacts ? it.contacts : [];
+    $("#fWho").querySelectorAll("[data-who]").forEach(b => b.setAttribute("aria-pressed", who.includes(b.dataset.who)));
     state.draftImgs = it && it.imgs ? {...it.imgs} : {};
     renderThumbs();
     $("#fErr").textContent = "";
@@ -631,6 +656,8 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
       a: $("#fA").value.trim(), reply: $("#fR").value.trim(), tags: $("#fK").value.trim(),
       urgent: $("#fU").checked, updatedAt: Date.now()
     };
+    const who = [...$("#fWho").querySelectorAll('[aria-pressed="true"]')].map(b => b.dataset.who);
+    if(who.length) data.contacts = who;
     const used = {};
     (data.a + " " + data.reply).replace(/\{\{사진(\d+)/g, (m, n) => { if(state.draftImgs[n]) used[n] = state.draftImgs[n]; return m; });
     if(Object.keys(used).length) data.imgs = used;
