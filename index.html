@@ -506,7 +506,6 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
   document.addEventListener("keydown", e => {
     if(e.key === "/" && !["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName)){ e.preventDefault(); $("#q").focus(); }
     if(e.key === "Escape" && $("#lightbox").classList.contains("show")){ $("#lightbox").classList.remove("show"); return; }
-    if(e.key === "Escape" && $("#scrim").classList.contains("show")) closeSheet();
   });
   $("#cats").addEventListener("click", e => { const b = e.target.closest(".chip"); if(!b) return; state.cat = b.dataset.c; render(); });
   $("#types").addEventListener("click", e => {
@@ -648,7 +647,6 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
   }
   function closeSheet(){ $("#scrim").classList.remove("show"); state.editing=null; $("#addBtn").focus(); }
   $("#cancelBtn").addEventListener("click", closeSheet);
-  $("#scrim").addEventListener("click", e => { if(e.target === $("#scrim")) closeSheet(); });
 
   $("#saveBtn").addEventListener("click", async () => {
     const data = {
@@ -772,7 +770,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
     if(files.length){ e.preventDefault(); addImages(files); }
   });
 
-  // 사진 팝업
+  // 사진 팝업 (바깥을 누르면 닫힘)
   function openPhoto(src, cap){
     const lb = $("#lightbox");
     lb.querySelector("img").src = src;
