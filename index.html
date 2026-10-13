@@ -150,11 +150,10 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
 .who{margin-top:16px;border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:10px;padding:12px 14px;background:var(--bg-2)}
 .who strong{display:block;color:var(--text);font-size:14.5px;margin-bottom:6px}
 .who-line{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:14.5px}
-.who-name{display:inline-block;background:var(--navy);color:var(--bg);border-radius:999px;padding:2px 11px;font-weight:600;font-size:13.5px}
+.who-name{display:inline-flex;align-items:center;gap:4px;background:var(--navy);color:var(--bg);border-radius:999px;padding:3px 12px;font-weight:600;font-size:13.5px;text-decoration:none}
+a.who-name:hover{filter:brightness(1.15)}
+.who-num{font-weight:500;opacity:.9;font-variant-numeric:tabular-nums}
 .who-sep{color:var(--muted)}
-.who-p{display:inline-flex;align-items:center;gap:6px}
-.who-tel{color:var(--navy);font-weight:600;font-size:14px;text-decoration:none;font-variant-numeric:tabular-nums}
-.who-tel:hover{text-decoration:underline}
 .who-rows{display:flex;flex-direction:column;gap:8px}
 .who-row{display:flex;align-items:center;gap:10px}
 .who-row .toggle{min-width:118px;justify-content:flex-start}
@@ -438,6 +437,14 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
 
   function fmt(ms){ if(!ms) return ""; const d = new Date(ms); return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")} 수정`; }
 
+  function whoHtml(it, ts){
+    return it.contacts.map(n => {
+      const p = state.phones[n];
+      const inner = `${EMOJI[n] ? EMOJI[n] + " " : ""}${hl(n, ts)}${p ? ` <span class="who-num">(${esc(p)})</span>` : ""}`;
+      return p ? `<a class="who-name" href="tel:${esc(p.replace(/[^0-9+]/g,""))}" title="눌러서 전화 걸기">${inner}</a>` : `<span class="who-name">${inner}</span>`;
+    }).join('<span class="who-sep">/</span>');
+  }
+
   function render(){
     renderInner();
     updateBulk();
@@ -495,7 +502,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
         </button>
         <div class="body">
           <div class="ans">${hl(it.a, ts, true, it.imgs)}</div>
-          ${(it.contacts||[]).length?`<div class="who"><strong>그래도 안 된다면?</strong><div class="who-line">${it.contacts.map(n=>`<span class="who-p"><span class="who-name">${EMOJI[n]?EMOJI[n]+" ":""}${hl(n, ts)}</span>${state.phones[n]?`<a class="who-tel" href="tel:${esc(state.phones[n].replace(/[^0-9+]/g,""))}">${esc(state.phones[n])}</a>`:""}</span>`).join('<span class="who-sep">/</span>')}<span>에게 빠르게 연락 주세요!</span></div></div>`:""}
+          ${(it.contacts||[]).length?`<div class="who"><strong>그래도 안 된다면?</strong><div class="who-line">${whoHtml(it, ts)}<span>에게 빠르게 연락 주세요!</span></div></div>`:""}
           ${it.reply?`<div class="reply"><div class="reply-h"><span>수강생 답변 문구</span><button class="copy" type="button" data-act="copy">복사</button></div><div class="reply-t">${hl(it.reply, ts, true, it.imgs)}</div></div>`:""}
           <div class="foot">
             <div class="kw">${kws.map(k=>`<span>${hl(k, ts)}</span>`).join("")}</div>
