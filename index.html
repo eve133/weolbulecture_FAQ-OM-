@@ -152,7 +152,14 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
 .who-line{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:14.5px}
 .who-name{display:inline-block;background:var(--navy);color:var(--bg);border-radius:999px;padding:2px 11px;font-weight:600;font-size:13.5px}
 .who-sep{color:var(--muted)}
-.toggles{display:flex;flex-wrap:wrap;gap:8px}
+.who-p{display:inline-flex;align-items:center;gap:6px}
+.who-tel{color:var(--navy);font-weight:600;font-size:14px;text-decoration:none;font-variant-numeric:tabular-nums}
+.who-tel:hover{text-decoration:underline}
+.who-rows{display:flex;flex-direction:column;gap:8px}
+.who-row{display:flex;align-items:center;gap:10px}
+.who-row .toggle{min-width:118px;justify-content:flex-start}
+.who-row input{flex:1;max-width:220px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px}
+.who-row input:focus{border-color:var(--navy);outline:0}
 .toggle{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 16px;cursor:pointer;font-weight:600;font-size:14px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
 .toggle::before{content:"";width:14px;height:14px;border-radius:50%;border:1.5px solid currentColor;box-sizing:border-box}
 .toggle[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:var(--bg)}
@@ -319,8 +326,8 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
       <div class="pv" id="fRpv" aria-live="polite"></div>
     </div>
     <div class="f">
-      <label>그래도 안 된다면? 연락할 담당자 <small>선택 · 여러 명 고를 수 있어요</small></label>
-      <div class="toggles" id="fWho" role="group" aria-label="담당자"></div>
+      <label>그래도 안 된다면? 연락할 담당자 <small>선택 · 여러 명 고를 수 있어요 · 번호는 모든 항목에 함께 적용돼요</small></label>
+      <div class="who-rows" id="fWho" role="group" aria-label="담당자"></div>
     </div>
     <div class="f">
       <label for="fK">검색 키워드 <small>쉼표로 구분 · 비슷한 말을 넣어두면 잘 찾혀요</small></label>
@@ -342,9 +349,15 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
 (function(){
   const CATS = ["입장·출입","강의 중","장비·AV","시설·환경","수강 안내","긴급상황","기타"];
   const TYPE_LABEL = {field:"현장 대응", student:"수강생 답변"};
-  const CONTACTS = ["이브","테디","토니"]; // 담당자 이름을 바꾸거나 추가하려면 여기를 고치세요
+  // 담당자 이름·이모지를 바꾸거나 추가하려면 여기를 고치세요 (번호는 항목 수정 창에서 입력)
+  const CONTACTS = [
+    {name:"이브", emoji:"🙋🏻‍♀️"},
+    {name:"테디", emoji:"🙋🏻‍♂️"},
+    {name:"토니", emoji:"🙋🏻‍♂️"}
+  ];
+  const EMOJI = Object.fromEntries(CONTACTS.map(c => [c.name, c.emoji]));
   const EDIT = new URLSearchParams(location.search).has("edit");
-  const state = {items:[], q:"", cat:"전체", type:"all", open:new Set(), canWrite:EDIT, editing:null, loaded:false, dirty:false, failed:false, draftImgs:{}, sel:new Set()};
+  const state = {items:[], q:"", cat:"전체", type:"all", open:new Set(), canWrite:EDIT, editing:null, loaded:false, dirty:false, failed:false, draftImgs:{}, sel:new Set(), phones:{}};
 
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -482,7 +495,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
         </button>
         <div class="body">
           <div class="ans">${hl(it.a, ts, true, it.imgs)}</div>
-          ${(it.contacts||[]).length?`<div class="who"><strong>그래도 안 된다면?</strong><div class="who-line">${it.contacts.map(n=>`<span class="who-name">${hl(n, ts)}</span>`).join('<span class="who-sep">/</span>')}<span>에게 빠르게 연락 주세요!</span></div></div>`:""}
+          ${(it.contacts||[]).length?`<div class="who"><strong>그래도 안 된다면?</strong><div class="who-line">${it.contacts.map(n=>`<span class="who-p"><span class="who-name">${EMOJI[n]?EMOJI[n]+" ":""}${hl(n, ts)}</span>${state.phones[n]?`<a class="who-tel" href="tel:${esc(state.phones[n].replace(/[^0-9+]/g,""))}">${esc(state.phones[n])}</a>`:""}</span>`).join('<span class="who-sep">/</span>')}<span>에게 빠르게 연락 주세요!</span></div></div>`:""}
           ${it.reply?`<div class="reply"><div class="reply-h"><span>수강생 답변 문구</span><button class="copy" type="button" data-act="copy">복사</button></div><div class="reply-t">${hl(it.reply, ts, true, it.imgs)}</div></div>`:""}
           <div class="foot">
             <div class="kw">${kws.map(k=>`<span>${hl(k, ts)}</span>`).join("")}</div>
@@ -608,6 +621,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
   $("#dlBtn").addEventListener("click", () => {
     normalizeOrder();
     const out = state.items.slice().sort((a,b) => a.order - b.order);
+    out.push({id:"__settings", phones: state.phones});
     const blob = new Blob([JSON.stringify(out, null, 2)], {type:"application/json"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob); a.download = "faqs.json";
@@ -621,7 +635,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
 
   // ---------- 모달 ----------
   $("#fCat").innerHTML = CATS.map(c=>`<option>${esc(c)}</option>`).join("");
-  $("#fWho").innerHTML = CONTACTS.map(n=>`<button type="button" class="toggle" data-who="${esc(n)}" aria-pressed="false">${esc(n)}</button>`).join("");
+  $("#fWho").innerHTML = CONTACTS.map(c=>`<div class="who-row"><button type="button" class="toggle" data-who="${esc(c.name)}" aria-pressed="false">${c.emoji} ${esc(c.name)}</button><input type="tel" data-phone="${esc(c.name)}" placeholder="010-0000-0000" aria-label="${esc(c.name)} 연락처"></div>`).join("");
   $("#fWho").addEventListener("click", e => {
     const b = e.target.closest("[data-who]"); if(!b) return;
     b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true");
@@ -638,6 +652,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
     $("#fU").checked = it ? !!it.urgent : false;
     const who = it && it.contacts ? it.contacts : [];
     $("#fWho").querySelectorAll("[data-who]").forEach(b => b.setAttribute("aria-pressed", who.includes(b.dataset.who)));
+    $("#fWho").querySelectorAll("[data-phone]").forEach(i => i.value = state.phones[i.dataset.phone] || "");
     state.draftImgs = it && it.imgs ? {...it.imgs} : {};
     renderThumbs();
     $("#fErr").textContent = "";
@@ -661,6 +676,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
     if(Object.keys(used).length) data.imgs = used;
     if(!data.q){ $("#fErr").textContent = "질문 또는 상황을 입력하세요."; $("#fQ").focus(); return; }
     if(!data.a){ $("#fErr").textContent = "대응 방법이나 답변을 입력하세요."; $("#fA").focus(); return; }
+    $("#fWho").querySelectorAll("[data-phone]").forEach(i => { const v = i.value.trim(); if(v) state.phones[i.dataset.phone] = v; else delete state.phones[i.dataset.phone]; });
     if(state.editing){
       const i = state.items.findIndex(x => x.id === state.editing);
       if(i > -1) state.items[i] = {id: state.editing, ...data, order: state.items[i].order};
@@ -795,7 +811,13 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
   render();
   fetch("faqs.json?v=" + Date.now(), {cache:"no-store"})
     .then(r => { if(!r.ok) throw new Error(r.status); return r.json(); })
-    .then(list => { state.items = Array.isArray(list) ? list.filter(x => x && x.id && x.q) : []; normalizeOrder(); })
+    .then(list => {
+      list = Array.isArray(list) ? list : [];
+      const s = list.find(x => x && x.id === "__settings");
+      state.phones = (s && s.phones) || {};
+      state.items = list.filter(x => x && x.id && x.q);
+      normalizeOrder();
+    })
     .catch(() => { state.failed = true; })
     .finally(() => { state.loaded = true; render(); });
 })();
