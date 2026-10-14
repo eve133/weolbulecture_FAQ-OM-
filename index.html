@@ -53,6 +53,27 @@ button,input,textarea,select{font:inherit;color:inherit}
 .add-btn{display:none;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font-weight:600;padding:9px 14px;border-radius:8px;cursor:pointer;font-size:14px;white-space:nowrap}
 .add-btn.show{display:inline-block}
 .add-btn:hover{background:rgba(255,255,255,.1)}
+.top-btns{display:flex;gap:8px;flex-wrap:wrap}
+.req-btn{border:0;background:#fff;color:#1B2B4F;font-weight:700;padding:9px 14px;border-radius:8px;cursor:pointer;font-size:14px;white-space:nowrap}
+.req-btn:hover{background:#E6ECF7}
+.item{scroll-margin-top:150px}
+
+/* 하단 요청 남기기 */
+.req{margin-top:28px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;scroll-margin-top:150px}
+.req h2{margin:0;font-size:17px;color:var(--text)}
+.req p.desc{margin:4px 0 14px;font-size:13.5px;color:var(--muted)}
+.req-row{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.req input,.req textarea{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 12px;width:100%}
+.req input:focus,.req textarea:focus{border-color:var(--navy);outline:0}
+.req .nick{flex:0 0 180px}
+.req .msg{flex:1;min-width:220px}
+.req textarea{min-height:46px;height:46px;resize:vertical;line-height:1.5;transition:height .15s}
+.req textarea:focus,.req textarea.filled{height:110px}
+.req-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.req-note{font-size:13px;color:var(--muted)}
+.req-note.ok{color:var(--navy);font-weight:600}
+.req-note.err{color:var(--red);font-weight:600}
+@media (max-width:520px){.req .nick{flex:1 1 100%}}
 .hint{margin:10px 2px 0;font-size:13px;color:var(--on-navy-muted)}
 kbd{font-family:inherit;border:1px solid var(--on-navy-muted);border-radius:4px;padding:0 5px;font-size:12px}
 
@@ -219,6 +240,7 @@ a.who-name:hover{filter:brightness(1.15)}
 .sheet-acts{display:flex;justify-content:flex-end;gap:8px}
 .btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:9px 16px;cursor:pointer;font-weight:600}
 .btn.primary{background:var(--navy);color:var(--bg);border-color:var(--navy)}
+.btn:disabled{opacity:.5;cursor:default}
 .err{color:var(--red);font-size:14px;margin:0 0 10px}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#1B2B4F;color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:30}
 .toast.show{opacity:1}
@@ -241,7 +263,10 @@ a.who-name:hover{filter:brightness(1.15)}
         <h1>강의장 운영 FAQ</h1>
         <p class="sub">현장 이슈 대응법과 수강생 문의 답변을 한곳에서 찾아보세요.</p>
       </div>
-      <button class="add-btn" id="addBtn" type="button">+ 새 항목 추가</button>
+      <div class="top-btns">
+        <button class="req-btn" id="reqBtn" type="button">✍️ 내용 추가 요청</button>
+        <button class="add-btn" id="addBtn" type="button">+ 새 항목 추가</button>
+      </div>
     </div>
     <div class="search" role="search">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -272,6 +297,19 @@ a.who-name:hover{filter:brightness(1.15)}
     </div>
     <div class="status" id="status" aria-live="polite">불러오는 중…</div>
     <div class="list" id="list"></div>
+
+    <section class="req" id="req" aria-labelledby="reqTitle">
+      <h2 id="reqTitle">💬 추가가 필요한 내용 남기기</h2>
+      <p class="desc">FAQ에 있었으면 하는 내용이나 고쳐야 할 내용을 남겨주세요. 남긴 내용은 관리자에게만 전달돼요.</p>
+      <div class="req-row">
+        <input class="nick" id="reqNick" maxlength="30" placeholder="닉네임" aria-label="작성자 닉네임">
+        <textarea class="msg" id="reqMsg" maxlength="2000" placeholder="추가가 필요한 내용을 적어주세요" aria-label="추가가 필요한 내용"></textarea>
+      </div>
+      <div class="req-actions">
+        <span class="req-note" id="reqNote" aria-live="polite"></span>
+        <button class="btn primary" type="button" id="reqSend">등록</button>
+      </div>
+    </section>
   </div>
 </main>
 
@@ -355,6 +393,8 @@ a.who-name:hover{filter:brightness(1.15)}
     {name:"토니", emoji:"🙋🏻‍♂️"}
   ];
   const EMOJI = Object.fromEntries(CONTACTS.map(c => [c.name, c.emoji]));
+  // 구글폼 '미리 채워진 링크'를 따옴표 안에 붙여넣으세요 (첫 번째 칸 = 닉네임, 두 번째 칸 = 내용)
+  const REQUEST_PREFILL_URL = "";
   const EDIT = new URLSearchParams(location.search).has("edit");
   const state = {items:[], q:"", cat:"전체", type:"all", open:new Set(), canWrite:EDIT, editing:null, loaded:false, dirty:false, failed:false, draftImgs:{}, sel:new Set(), phones:{}};
 
@@ -477,7 +517,7 @@ a.who-name:hover{filter:brightness(1.15)}
       if(!state.items.length){
         L.innerHTML = `<div class="empty"><strong>아직 등록된 항목이 없어요</strong>현장에서 자주 생기는 상황부터 하나씩 추가해 보세요.${state.canWrite?`<br><button class="btn primary" type="button" data-act="add">첫 항목 추가</button>`:""}</div>`;
       } else {
-        L.innerHTML = `<div class="empty"><strong>찾는 내용이 없어요</strong>다른 단어로 검색하거나 카테고리를 '전체'로 바꿔 보세요.${state.canWrite?`<br><button class="btn primary" type="button" data-act="add">이 내용으로 새 항목 추가</button>`:""}</div>`;
+        L.innerHTML = `<div class="empty"><strong>찾는 내용이 없어요</strong>다른 단어로 검색하거나 카테고리를 '전체'로 바꿔 보세요.<br>${state.canWrite?`<button class="btn primary" type="button" data-act="add">이 내용으로 새 항목 추가</button>`:`<button class="btn primary" type="button" data-act="req">이 내용 추가 요청하기</button>`}</div>`;
       }
       return;
     }
@@ -540,12 +580,21 @@ a.who-name:hover{filter:brightness(1.15)}
     const b = e.target.closest("[data-act]"); if(!b) return;
     const act = b.dataset.act;
     if(act === "add"){ openSheet(null, state.q.trim()); return; }
+    if(act === "req"){ openReq(state.q.trim()); return; }
     const art = b.closest(".item"); const id = art && art.dataset.id;
     const it = state.items.find(x => x.id === id);
     if(act === "toggle"){
       const open = !art.classList.contains("open");
+      if(open){
+        // 다른 항목은 자동으로 닫기
+        state.open.clear();
+        document.querySelectorAll(".item.open").forEach(el => {
+          if(el !== art){ el.classList.remove("open"); const q = el.querySelector(".q"); if(q) q.setAttribute("aria-expanded", "false"); }
+        });
+      }
       art.classList.toggle("open", open); b.setAttribute("aria-expanded", open);
       open ? state.open.add(id) : state.open.delete(id);
+      if(open && art.getBoundingClientRect().top < 140) art.scrollIntoView({block:"start", behavior:"smooth"});
     } else if(act === "copy" && it){
       copyText(plainText(it.reply));
     } else if(act === "edit" && it){
@@ -692,7 +741,7 @@ a.who-name:hover{filter:brightness(1.15)}
       const id = "faq-" + Date.now().toString(36);
       const minOrder = state.items.reduce((m, x) => Math.min(m, x.order||0), 1);
       state.items.push({id, ...data, order: minOrder - 1});
-      state.open.add(id);
+      state.open.clear(); state.open.add(id);
       toast("추가했어요. 내려받기 후 반영돼요");
     }
     markDirty(); closeSheet(); render();
@@ -812,6 +861,43 @@ a.who-name:hover{filter:brightness(1.15)}
     if(k && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); openPhoto(k.dataset.src, k.textContent); }
   });
   $("#lightbox").addEventListener("click", e => { if(!e.target.closest("figure")) $("#lightbox").classList.remove("show"); });
+
+  // ---------- 내용 추가 요청 (관리자에게만 전달) ----------
+  function parseForm(u){
+    try{
+      const url = new URL(u);
+      const entries = [...url.searchParams.keys()].filter(k => /^entry\.\d+$/.test(k));
+      if(!/docs\.google\.com\/forms/.test(url.href) || entries.length < 2) return null;
+      return { action: url.origin + url.pathname.replace(/\/viewform$/, "/formResponse"), nick: entries[0], msg: entries[1] };
+    }catch(_){ return null; }
+  }
+  const FORM = parseForm(REQUEST_PREFILL_URL);
+  function openReq(prefill){
+    const box = $("#req");
+    if(prefill && !$("#reqMsg").value.trim()){ $("#reqMsg").value = prefill + " 관련 내용이 필요해요"; $("#reqMsg").classList.add("filled"); }
+    box.scrollIntoView({block:"start", behavior:"smooth"});
+    setTimeout(() => ($("#reqNick").value ? $("#reqMsg") : $("#reqNick")).focus({preventScroll:true}), 350);
+  }
+  try{ const n = localStorage.getItem("faq-nick"); if(n) $("#reqNick").value = n; }catch(_){}
+  $("#reqMsg").addEventListener("input", e => e.target.classList.toggle("filled", !!e.target.value));
+  $("#reqBtn").addEventListener("click", () => openReq());
+  $("#reqSend").addEventListener("click", async () => {
+    const nick = $("#reqNick").value.trim(), msg = $("#reqMsg").value.trim(), note = $("#reqNote");
+    note.className = "req-note";
+    if(!nick){ note.textContent = "닉네임을 적어주세요."; note.classList.add("err"); $("#reqNick").focus(); return; }
+    if(!msg){ note.textContent = "내용을 적어주세요."; note.classList.add("err"); $("#reqMsg").focus(); return; }
+    if(!FORM){ note.textContent = "아직 요청 기능이 연결되지 않았어요. 관리자에게 알려주세요."; note.classList.add("err"); return; }
+    const btn = $("#reqSend"); btn.disabled = true; btn.textContent = "보내는 중…";
+    try{
+      const body = new URLSearchParams(); body.append(FORM.nick, nick); body.append(FORM.msg, msg);
+      await fetch(FORM.action, {method:"POST", mode:"no-cors", body});
+      try{ localStorage.setItem("faq-nick", nick); }catch(_){}
+      $("#reqMsg").value = ""; $("#reqMsg").classList.remove("filled");
+      note.textContent = "등록됐어요! 관리자가 확인 후 반영할게요 🙏"; note.classList.add("ok");
+    }catch(_){
+      note.textContent = "보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러주세요."; note.classList.add("err");
+    }finally{ btn.disabled = false; btn.textContent = "등록"; }
+  });
 
   // ---------- 데이터 불러오기 ----------
   if(EDIT){ $("#editbar").classList.add("show"); $("#addBtn").classList.add("show"); $("#bulk").classList.add("show"); initSortable(); }
