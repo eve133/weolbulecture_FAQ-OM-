@@ -60,8 +60,17 @@ button,input,textarea,select{font:inherit;color:inherit}
 
 /* 하단 요청 남기기 */
 .req{margin-top:28px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;scroll-margin-top:150px}
+.req-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .req h2{margin:0;font-size:17px;color:var(--text)}
-.req p.desc{margin:4px 0 14px;font-size:13.5px;color:var(--muted)}
+.req p.desc{margin:4px 0 0;font-size:13.5px;color:var(--muted)}
+.req-toggle{flex:none}
+.req-form{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s ease}
+.req.open .req-form{grid-template-rows:1fr}
+.req-form-in{overflow:hidden;min-height:0;opacity:0;transition:opacity .2s ease}
+.req.open .req-form-in{opacity:1}
+.req-form-pad{padding-top:14px}
+.req-done{margin-top:10px;font-size:13.5px;color:var(--navy);font-weight:600;display:none}
+.req-done.show{display:block}
 .req-row{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
 .req input,.req textarea{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 12px;width:100%}
 .req input:focus,.req textarea:focus{border-color:var(--navy);outline:0}
@@ -77,7 +86,7 @@ button,input,textarea,select{font:inherit;color:inherit}
 .hint{margin:10px 2px 0;font-size:13px;color:var(--on-navy-muted)}
 kbd{font-family:inherit;border:1px solid var(--on-navy-muted);border-radius:4px;padding:0 5px;font-size:12px}
 
-/* 검색창 */
+/* 검색창: 헤더에 걸쳐 놓인 흰 박스 */
 .search{
   margin-top:24px;display:flex;align-items:center;gap:10px;
   background:#fff;color:#1B2B4F;border:1px solid transparent;border-radius:12px;padding:4px 6px 4px 16px;
@@ -120,8 +129,10 @@ main .wrap{padding:16px 20px 64px}
 .qt{grid-column:1/2;font-size:16.5px;font-weight:600;line-height:1.45;color:var(--text)}
 .chev{grid-row:1/3;grid-column:2;align-self:center;transition:transform .2s;color:var(--muted)}
 .item.open .chev{transform:rotate(180deg);color:var(--navy)}
-.body{display:none;padding:0 18px 18px}
-.item.open .body{display:block}
+.body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s ease}
+.item.open .body{grid-template-rows:1fr}
+.body-in{overflow:hidden;min-height:0;padding:0 18px;opacity:0;transition:opacity .2s ease,padding .28s ease}
+.item.open .body-in{padding-bottom:18px;opacity:1}
 .ans{white-space:pre-line;line-height:1.75;max-width:68ch;padding-top:14px;border-top:1px solid var(--line)}
 .reply{margin-top:16px;border-radius:10px;background:var(--navy-soft);padding:12px 14px}
 .reply-h{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--navy)}
@@ -180,6 +191,7 @@ a.who-name:hover{filter:brightness(1.15)}
 .who-row .toggle{min-width:118px;justify-content:flex-start}
 .who-row input{flex:1;max-width:220px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px}
 .who-row input:focus{border-color:var(--navy);outline:0}
+.toggles{display:flex;flex-wrap:wrap;gap:8px}
 .toggle{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 16px;cursor:pointer;font-weight:600;font-size:14px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
 .toggle::before{content:"";width:14px;height:14px;border-radius:50%;border:1.5px solid currentColor;box-sizing:border-box}
 .toggle[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:var(--bg)}
@@ -192,6 +204,7 @@ a.who-name:hover{filter:brightness(1.15)}
 .tb{display:flex;gap:4px;flex-wrap:wrap}
 .tb button{min-width:34px;height:30px;border:1px solid var(--line);background:var(--card);border-radius:6px;cursor:pointer;font-size:13px;padding:0 8px}
 .tb button:hover{border-color:var(--navy)}
+
 .hlt{background:linear-gradient(transparent 45%,#FFE066 45%);padding:0 1px}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .hlt{background:linear-gradient(transparent 45%,#7A6400 45%)}}
 :root[data-theme="dark"] .hlt{background:linear-gradient(transparent 45%,#7A6400 45%)}
@@ -240,7 +253,6 @@ a.who-name:hover{filter:brightness(1.15)}
 .sheet-acts{display:flex;justify-content:flex-end;gap:8px}
 .btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:9px 16px;cursor:pointer;font-weight:600}
 .btn.primary{background:var(--navy);color:var(--bg);border-color:var(--navy)}
-.btn:disabled{opacity:.5;cursor:default}
 .err{color:var(--red);font-size:14px;margin:0 0 10px}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#1B2B4F;color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:30}
 .toast.show{opacity:1}
@@ -299,16 +311,24 @@ a.who-name:hover{filter:brightness(1.15)}
     <div class="list" id="list"></div>
 
     <section class="req" id="req" aria-labelledby="reqTitle">
-      <h2 id="reqTitle">💬 추가가 필요한 내용 남기기</h2>
-      <p class="desc">FAQ에 있었으면 하는 내용이나 고쳐야 할 내용을 남겨주세요. 남긴 내용은 관리자에게만 전달돼요.</p>
-      <div class="req-row">
-        <input class="nick" id="reqNick" maxlength="30" placeholder="닉네임" aria-label="작성자 닉네임">
-        <textarea class="msg" id="reqMsg" maxlength="2000" placeholder="추가가 필요한 내용을 적어주세요" aria-label="추가가 필요한 내용"></textarea>
+      <div class="req-top">
+        <div>
+          <h2 id="reqTitle">💬 추가가 필요한 내용 남기기</h2>
+          <p class="desc">FAQ에 있었으면 하는 내용이나 고쳐야 할 내용을 남겨주세요. 관리자에게만 전달돼요.</p>
+        </div>
+        <button class="btn primary req-toggle" type="button" id="reqToggle" aria-expanded="false" aria-controls="reqForm">✍️ 작성하기</button>
       </div>
-      <div class="req-actions">
-        <span class="req-note" id="reqNote" aria-live="polite"></span>
-        <button class="btn primary" type="button" id="reqSend">등록</button>
-      </div>
+      <p class="req-done" id="reqDone" aria-live="polite">등록됐어요! 관리자가 확인 후 반영할게요 🙏</p>
+      <div class="req-form" id="reqForm"><div class="req-form-in"><div class="req-form-pad">
+        <div class="req-row">
+          <input class="nick" id="reqNick" maxlength="30" placeholder="닉네임" aria-label="작성자 닉네임">
+          <textarea class="msg" id="reqMsg" maxlength="2000" placeholder="추가가 필요한 내용을 적어주세요" aria-label="추가가 필요한 내용"></textarea>
+        </div>
+        <div class="req-actions">
+          <span class="req-note" id="reqNote" aria-live="polite"></span>
+          <button class="btn primary" type="button" id="reqSend">등록</button>
+        </div>
+      </div></div></div>
     </section>
   </div>
 </main>
@@ -381,7 +401,6 @@ a.who-name:hover{filter:brightness(1.15)}
 
 <div class="toast" id="toast" role="status"></div>
 <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="사진 보기"><figure><img alt=""><figcaption></figcaption></figure><p>바깥을 누르면 닫혀요</p></div>
-
 <script>
 (function(){
   const CATS = ["입장·출입","강의 중","장비·AV","시설·환경","수강 안내","긴급상황","기타"];
@@ -540,7 +559,7 @@ a.who-name:hover{filter:brightness(1.15)}
           <span class="qt">${hl(it.q, ts)}</span>
           <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
         </button>
-        <div class="body">
+        <div class="body"><div class="body-in">
           <div class="ans">${hl(it.a, ts, true, it.imgs)}</div>
           ${(it.contacts||[]).length?`<div class="who"><strong>그래도 안 된다면?</strong><div class="who-line">${whoHtml(it, ts)}<span>에게 빠르게 연락 주세요!</span></div></div>`:""}
           ${it.reply?`<div class="reply"><div class="reply-h"><span>수강생 답변 문구</span><button class="copy" type="button" data-act="copy">복사</button></div><div class="reply-t">${hl(it.reply, ts, true, it.imgs)}</div></div>`:""}
@@ -551,7 +570,7 @@ a.who-name:hover{filter:brightness(1.15)}
               ${state.canWrite?`<button type="button" data-act="edit">수정</button><button type="button" class="del" data-act="del">삭제</button>`:""}
             </div>
           </div>
-        </div>
+        </div></div>
       </article>`;
     }).join("");
   }
@@ -594,7 +613,7 @@ a.who-name:hover{filter:brightness(1.15)}
       }
       art.classList.toggle("open", open); b.setAttribute("aria-expanded", open);
       open ? state.open.add(id) : state.open.delete(id);
-      if(open && art.getBoundingClientRect().top < 140) art.scrollIntoView({block:"start", behavior:"smooth"});
+      if(open) setTimeout(() => { if(art.getBoundingClientRect().top < 140) art.scrollIntoView({block:"start", behavior:"smooth"}); }, 300);
     } else if(act === "copy" && it){
       copyText(plainText(it.reply));
     } else if(act === "edit" && it){
@@ -727,12 +746,12 @@ a.who-name:hover{filter:brightness(1.15)}
     };
     const who = [...$("#fWho").querySelectorAll('[aria-pressed="true"]')].map(b => b.dataset.who);
     if(who.length) data.contacts = who;
+    $("#fWho").querySelectorAll("[data-phone]").forEach(i => { const v = i.value.trim(); if(v) state.phones[i.dataset.phone] = v; else delete state.phones[i.dataset.phone]; });
     const used = {};
     (data.a + " " + data.reply).replace(/\{\{사진(\d+)/g, (m, n) => { if(state.draftImgs[n]) used[n] = state.draftImgs[n]; return m; });
     if(Object.keys(used).length) data.imgs = used;
     if(!data.q){ $("#fErr").textContent = "질문 또는 상황을 입력하세요."; $("#fQ").focus(); return; }
     if(!data.a){ $("#fErr").textContent = "대응 방법이나 답변을 입력하세요."; $("#fA").focus(); return; }
-    $("#fWho").querySelectorAll("[data-phone]").forEach(i => { const v = i.value.trim(); if(v) state.phones[i.dataset.phone] = v; else delete state.phones[i.dataset.phone]; });
     if(state.editing){
       const i = state.items.findIndex(x => x.id === state.editing);
       if(i > -1) state.items[i] = {id: state.editing, ...data, order: state.items[i].order};
@@ -872,8 +891,24 @@ a.who-name:hover{filter:brightness(1.15)}
     }catch(_){ return null; }
   }
   const FORM = parseForm(REQUEST_PREFILL_URL);
+  function setReqOpen(open){
+    const box = $("#req");
+    box.classList.toggle("open", open);
+    $("#reqToggle").setAttribute("aria-expanded", open);
+    $("#reqToggle").textContent = open ? "닫기" : "✍️ 작성하기";
+    $("#reqToggle").classList.toggle("primary", !open);
+    $("#reqForm").inert = !open;
+    if(open){ $("#reqDone").classList.remove("show"); $("#reqNote").textContent = ""; $("#reqNote").className = "req-note"; }
+  }
+  $("#reqForm").inert = true;
+  $("#reqToggle").addEventListener("click", () => {
+    const open = !$("#req").classList.contains("open");
+    setReqOpen(open);
+    if(open) setTimeout(() => ($("#reqNick").value ? $("#reqMsg") : $("#reqNick")).focus({preventScroll:true}), 250);
+  });
   function openReq(prefill){
     const box = $("#req");
+    setReqOpen(true);
     if(prefill && !$("#reqMsg").value.trim()){ $("#reqMsg").value = prefill + " 관련 내용이 필요해요"; $("#reqMsg").classList.add("filled"); }
     box.scrollIntoView({block:"start", behavior:"smooth"});
     setTimeout(() => ($("#reqNick").value ? $("#reqMsg") : $("#reqNick")).focus({preventScroll:true}), 350);
@@ -893,7 +928,9 @@ a.who-name:hover{filter:brightness(1.15)}
       await fetch(FORM.action, {method:"POST", mode:"no-cors", body});
       try{ localStorage.setItem("faq-nick", nick); }catch(_){}
       $("#reqMsg").value = ""; $("#reqMsg").classList.remove("filled");
-      note.textContent = "등록됐어요! 관리자가 확인 후 반영할게요 🙏"; note.classList.add("ok");
+      note.textContent = "";
+      setReqOpen(false);
+      $("#reqDone").classList.add("show");
     }catch(_){
       note.textContent = "보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러주세요."; note.classList.add("err");
     }finally{ btn.disabled = false; btn.textContent = "등록"; }
